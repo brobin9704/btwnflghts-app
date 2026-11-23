@@ -31,7 +31,7 @@ jobs:
         run: sh scripts/restore-assets.sh
       - run: npx cap sync android
       - name: Build debug APK
-        run: cd android && chmod +x gradlew && ./gradlew assembleDebug --stacktrace
+        run: cd android && chmod +x gradlew && base64 --decode < gradle/wrapper/gradle-wrapper.jar.b64 > gradle/wrapper/gradle-wrapper.jar && ./gradlew assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: btwnflghts-debug-apk
@@ -74,7 +74,7 @@ jobs:
           EOF
       - name: Build release AAB
         if: env.HAS_KEYSTORE == 'true'
-        run: cd android && chmod +x gradlew && ./gradlew bundleRelease --stacktrace
+        run: cd android && chmod +x gradlew && base64 --decode < gradle/wrapper/gradle-wrapper.jar.b64 > gradle/wrapper/gradle-wrapper.jar && ./gradlew bundleRelease --stacktrace
       - uses: actions/upload-artifact@v4
         if: env.HAS_KEYSTORE == 'true'
         with:
