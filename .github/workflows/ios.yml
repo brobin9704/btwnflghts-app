@@ -1,0 +1,31 @@
+# Builds the BtwnFlghts iOS app on a macOS runner WITHOUT code signing.
+# This proves the project compiles. A signed release build for the App Store
+# needs an Apple Developer account and certificates — see README.md.
+name: iOS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build (unsigned)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Restore app icons/splashes
+        run: sh scripts/restore-assets.sh
+      - run: npx cap sync ios
+      - name: Build for iOS Simulator (no signing)
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build
