@@ -39,8 +39,13 @@ jobs:
 
   release-aab:
     name: Build signed release AAB
-    if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     runs-on: ubuntu-latest
+    # NOTE: secrets cannot be tested in a job-level `if:` — GitHub rejects
+    # the whole workflow file ("Unrecognized named-value: 'secrets'").
+    # Hoist the presence test into job env (secrets are allowed there)
+    # and gate the keystore steps on it instead.
+    env:
+      HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -56,8 +61,10 @@ jobs:
         run: sh scripts/restore-assets.sh
       - run: npx cap sync android
       - name: Decode keystore
+        if: env.HAS_KEYSTORE == 'true'
         run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/btwnflghts.keystore
       - name: Write keystore.properties
+        if: env.HAS_KEYSTORE == 'true'
         run: |
           cat > android/keystore.properties <<'EOF'
           storeFile=app/btwnflghts.keystore
@@ -66,8 +73,10 @@ jobs:
           keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
           EOF
       - name: Build release AAB
+        if: env.HAS_KEYSTORE == 'true'
         run: cd android && ./gradlew bundleRelease --stacktrace
       - uses: actions/upload-artifact@v4
+        if: env.HAS_KEYSTORE == 'true'
         with:
           name: btwnflghts-release-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
