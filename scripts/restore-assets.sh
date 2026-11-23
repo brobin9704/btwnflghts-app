@@ -6,6 +6,8 @@
 # Run: sh scripts/restore-assets.sh
 set -e
 cd "$(dirname "$0")/.."
-base64 -d assets/icon.png.b64 > assets/icon.png
-base64 -d assets/splash.png.b64 > assets/splash.png
+# NOTE: `base64 -d` is decode on Linux (GNU) but debug on macOS (BSD) —
+# decode there is `-D`. `--decode` works on both, so use it.
+base64 --decode assets/icon.png.b64 > assets/icon.png
+base64 --decode assets/splash.png.b64 > assets/splash.png
 npx @capacitor/assets generate --iconBackgroundColor '#0e091d' --splashBackgroundColor '#0e091d'
