@@ -1,0 +1,13 @@
+{
+	"appId": "com.btwnflghts.app",
+	"appName": "BtwnFlghts",
+	"server": {
+		"allowNavigation": [
+			"btwnflghts.com",
+			"www.btwnflghts.com"
+		],
+		"cleartext": false,
+		"url": "https://btwnflghts.com"
+	},
+	"webDir": "www"
+}
