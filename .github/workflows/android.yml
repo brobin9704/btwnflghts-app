@@ -1,0 +1,73 @@
+# Builds the BtwnFlghts Android app.
+# - Debug APK: built on every push/PR to main. Install it on a phone to test.
+# - Signed release AAB: built only when the keystore secrets are set
+#   (ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS,
+#   ANDROID_KEY_PASSWORD). Until then the AAB job is skipped.
+name: Android
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  debug-apk:
+    name: Build debug APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: npm ci
+      - name: Restore app icons/splashes
+        run: sh scripts/restore-assets.sh
+      - run: npx cap sync android
+      - name: Build debug APK
+        run: cd android && ./gradlew assembleDebug --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: btwnflghts-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+  release-aab:
+    name: Build signed release AAB
+    if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: npm ci
+      - name: Restore app icons/splashes
+        run: sh scripts/restore-assets.sh
+      - run: npx cap sync android
+      - name: Decode keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/btwnflghts.keystore
+      - name: Write keystore.properties
+        run: |
+          cat > android/keystore.properties <<'EOF'
+          storeFile=app/btwnflghts.keystore
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
+      - name: Build release AAB
+        run: cd android && ./gradlew bundleRelease --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: btwnflghts-release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
